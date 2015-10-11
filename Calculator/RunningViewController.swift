@@ -91,10 +91,12 @@ class RunningViewController : UIViewController {
                 }
                 else {
                     SongCell.decorateForSong(nowPlaying, inNameLabel: itemNameLabel, artistLabel: itemArtistLabel, albumArt: itemAlbumArt)
+                    RMPlayer.nowPlayingItem = song
                 }
             }
             else {
                 SongCell.decorateForSong(song, inNameLabel: itemNameLabel, artistLabel: itemArtistLabel, albumArt: itemAlbumArt)
+                RMPlayer.nowPlayingItem = song
             }
             
             RMPlayer.play()

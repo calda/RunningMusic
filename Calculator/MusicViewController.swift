@@ -63,7 +63,7 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
         
         currentItemView.startPlayheadTimers()
         currentItem = unassignedSongs[0]
-        //updateForNextUnassignedItem()
+        updateForNextUnassignedItem()
     }
     
     //MARK - Updating UI
