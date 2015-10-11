@@ -21,25 +21,16 @@ class SongCell : UICollectionViewCell {
     @IBOutlet weak var itemNameLabel: UILabel!
     @IBOutlet weak var itemArtistLabel: UILabel!
     @IBOutlet weak var playButton: UIImageView!
-    var playhead: UIView!
+    var playhead: UIView?
+    var playBar: UIView?
+    var playheadTimer: NSTimer?
     
     func decorateForSong(item: MPMediaItem, atIndexPath indexPath: NSIndexPath, controller: MusicViewController) {
         self.item = item
         self.controller = controller
         self.indexPath = indexPath
         
-        let name = item.valueForProperty(MPMediaItemPropertyTitle) as? NSString ?? "Untitled Song"
-        itemNameLabel.text = name as String
-        
-        let artist = item.valueForProperty(MPMediaItemPropertyArtist) as? NSString ?? ""
-        itemArtistLabel.text = artist as String
-        
-        let artwork = item.valueForProperty(MPMediaItemPropertyArtwork) as? MPMediaItemArtwork
-        let artScale = UIScreen.mainScreen().scale
-        let artSize = CGSizeMake(itemAlbumArt.frame.width * artScale, itemAlbumArt.frame.height * artScale)
-        //TODO: add art-default as image asset
-        let albumArt = artwork?.imageWithSize(artSize) ?? UIImage(named: "art-default")!
-        itemAlbumArt.image = albumArt
+        SongCell.decorateForSong(item, inNameLabel: itemNameLabel, artistLabel: itemArtistLabel, albumArt: itemAlbumArt)
         
         //set as player item
         if indexPath.item != 0 { return }
@@ -61,13 +52,34 @@ class SongCell : UICollectionViewCell {
         let height = itemAlbumArt.frame.height * 0.075
         let frame = CGRect(origin: CGPointZero, size: CGSizeMake(3.0, height))
         playhead = UIView(frame: frame)
-        playhead.restorationIdentifier = "playhead"
-        playhead.backgroundColor = UIColor(hue: 0.0, saturation: 0.6, brightness: 1.0, alpha: 1.0)
-        itemAlbumArt.addSubview(playhead)
+        playhead!.restorationIdentifier = "playhead"
+        playhead!.backgroundColor = UIColor(hue: 0.0, saturation: 0.6, brightness: 1.0, alpha: 1.0)
+        itemAlbumArt.addSubview(playhead!)
+    }
+    
+    static func decorateForSong(item: MPMediaItem, inNameLabel nameLabel: UILabel, artistLabel: UILabel, albumArt: UIImageView) {
+        let name = item.valueForProperty(MPMediaItemPropertyTitle) as? NSString ?? "Untitled Song"
+        nameLabel.text = name as String
+        
+        let artist = item.valueForProperty(MPMediaItemPropertyArtist) as? NSString ?? ""
+        artistLabel.text = artist as String
+        
+        let artwork = item.valueForProperty(MPMediaItemPropertyArtwork) as? MPMediaItemArtwork
+        let artScale = UIScreen.mainScreen().scale
+        let artSize = CGSizeMake(albumArt.frame.width * artScale, albumArt.frame.height * artScale)
+        //TODO: add art-default as image asset
+        let albumArtImage = artwork?.imageWithSize(artSize) ?? UIImage(named: "art-default")!
+        albumArt.image = albumArtImage
     }
     
     override func prepareForReuse() {
         super.prepareForReuse()
+        self.playhead?.removeFromSuperview()
+        self.playhead = nil
+        self.playBar?.removeFromSuperview()
+        self.playBar = nil
+        self.playheadTimer?.invalidate()
+        self.playheadTimer = nil
         self.transform = CGAffineTransformIdentity
         self.indexPath = nil
     }
@@ -78,11 +90,11 @@ class SongCell : UICollectionViewCell {
         itemAlbumArt.clipsToBounds = false
         self.clipsToBounds = false
         let frame = CGRect(origin: CGPointMake(0.0, -4.0), size: CGSizeMake(itemAlbumArt.frame.width, 4.0))
-        let playBar = UIView(frame: frame)
-        playBar.backgroundColor = UIColor(hue: 0.0, saturation: 0.6, brightness: 1.0, alpha: 1.0)
-        itemAlbumArt.addSubview(playBar)
+        self.playBar = UIView(frame: frame)
+        playBar!.backgroundColor = UIColor(hue: 0.0, saturation: 0.6, brightness: 1.0, alpha: 1.0)
+        itemAlbumArt.addSubview(playBar!)
         
-        NSTimer.scheduledTimerWithTimeInterval(0.5, target: self, selector: "updatePlayhead", userInfo: nil, repeats: true)
+        playheadTimer = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: "updatePlayhead", userInfo: nil, repeats: true)
     }
     
     func updatePlayhead() {
@@ -113,8 +125,13 @@ class SongCell : UICollectionViewCell {
     override func applyLayoutAttributes(layoutAttributes: UICollectionViewLayoutAttributes) {
         super.applyLayoutAttributes(layoutAttributes)
         
-        let transform = layoutAttributes.transform
-        self.transform = transform
+        let index = layoutAttributes.indexPath.item
+        if index == 0 && self.playhead == nil && controller?.unassignedSongs.count > 1 {
+            if let song = controller?.unassignedSongs[1] {
+                self.decorateForSong(song, atIndexPath: layoutAttributes.indexPath, controller: controller)
+                //self.startPlayheadTimers()
+            }
+        }
         
         if let attributes = layoutAttributes as? SongCellAttributes {
             self.itemNameLabel.alpha = attributes.textAlpha

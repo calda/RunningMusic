@@ -62,7 +62,8 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
         self.itemRestingPosition = currentItemView.frame.origin
         
         currentItemView.startPlayheadTimers()
-        updateForNextUnassignedItem()
+        currentItem = unassignedSongs[0]
+        //updateForNextUnassignedItem()
     }
     
     //MARK - Updating UI
@@ -74,6 +75,8 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
             noSongsRemaining()
             return
         }
+        
+        RMPlayer.nowPlayingItem = currentItem
         
         collectionView.reloadData()
     }
@@ -220,14 +223,12 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
     }
     
     func processFinishedItemDrag(sender: UIPanGestureRecognizer) {
-        guard let currentItemView = currentItemView else { return }
+        guard let currentItem = currentItem else { return }
         
-        defer {
-            //save data
-            let (closestButton, distance) = buttonClosestToCurrentItem()
-            if let playlist = Playlist.forString(closestButton.restorationIdentifier ?? "") where distance > 50.0 {
-                processAssignmentToPlaylist(playlist)
-            }
+        //save data
+        let (closestButton, distance) = buttonClosestToCurrentItem()
+        if let playlist = Playlist.forString(closestButton.restorationIdentifier ?? "") where distance < 50.0 {
+            playlist.addSong(currentItem)
         }
         
         if unassignedSongs.count == 1 {
@@ -240,8 +241,6 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
             self.collectionView.deleteItemsAtIndexPaths([NSIndexPath(forItem: 0, inSection: 0)])
             self.collectionView.insertItemsAtIndexPaths([NSIndexPath(forItem: self.collectionView.numberOfItemsInSection(0) - 1, inSection: 0)])
         }, completion: { _ in
-            print("Reloading")
-            print(self.layout.currentDragPercentage)
             self.layout.transitioningToNewCurrent = false
             //self.layout.currentDragPercentage = 0.0
             //self.collectionView.reloadData()
@@ -260,7 +259,11 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
         
         animatePlaylistButton(nil, atDistancePercentage: 1.0)
         
-        
+        //set up for next song
+        if let index = unassignedSongs.indexOf(currentItem) {
+            unassignedSongs.removeAtIndex(index)
+        }
+        updateForNextUnassignedItem()
     }
     
     func animatePlaylistButton(button: UIButton?, atDistancePercentage percent: CGFloat) {
@@ -297,11 +300,8 @@ class MusicViewController : UIViewController, UICollectionViewDataSource {
     @IBAction func assignmentButtonPressed(sender: UIButton) {
         let playlistName = sender.restorationIdentifier ?? ""
         guard let playlist = Playlist.forString(playlistName) else { return }
-        processAssignmentToPlaylist(playlist)
-    }
-    
-    func processAssignmentToPlaylist(playlist: Playlist) {
         guard let currentItem = currentItem else { return }
+        
         playlist.addSong(currentItem)
         if let index = unassignedSongs.indexOf(currentItem) {
             unassignedSongs.removeAtIndex(index)

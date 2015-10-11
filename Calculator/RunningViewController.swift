@@ -9,119 +9,98 @@
 import Foundation
 import UIKit
 import CoreMotion
+import MediaPlayer
 
-var RMCurrentActivityState = ActivityState.Standing
+var RMCurrentActivityState = ActivityState.Running
 enum ActivityState {
-    case Standing, Walking, Running
+    case Walking, Running
+    
+    var playlist: Playlist {
+        if self == .Walking { return Playlist.Walking }
+        return Playlist.Running
+    }
+    
+    var color: UIColor {
+        if self == .Walking { return UIColor(red: 63/256, green: 81/256, blue: 181/256, alpha: 0.5) }
+        else { return UIColor(red: 244/256, green: 67/256, blue: 54/256, alpha: 0.5) }
+    }
+    
+    var image: UIImage {
+        let name = self == .Walking ? "walk" : "run"
+        return UIImage(named: "icon-\(name)")!
+    }
 }
 
 class RunningViewController : UIViewController {
     
-    var motion: CMMotionManager = CMMotionManager()
+    var motion: CMMotionActivityManager = CMMotionActivityManager()
     
-    var previousAccel: CMAcceleration?
-    var motionConstantStack: [Double] = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-    var previous100Frames: [Double] = []
+    @IBOutlet weak var itemAlbumArt: UIImageView!
+    @IBOutlet weak var itemNameLabel: UILabel!
+    @IBOutlet weak var itemArtistLabel: UILabel!
+    @IBOutlet weak var activityImage: UIImageView!
+    @IBOutlet weak var backgroundView: UIView!
     
-    @IBOutlet weak var stateLabel: UILabel!
+    var songsInPlaylist = [MPMediaItem]()
     
     override func viewDidLoad() {
         startAccelerometerPolling()
     }
     
+    override func viewWillAppear(animated: Bool) {
+        self.view.layoutIfNeeded()
+        self.transitionToActivityState(.Running)
+    }
+    
     func startAccelerometerPolling() {
         
-        motion.startAccelerometerUpdatesToQueue(NSOperationQueue(), withHandler: { data, error in
-            guard let data = data else { return }
-            self.performAccelerometerCalculations(data)
+        motion.startActivityUpdatesToQueue(NSOperationQueue(), withHandler: { activity in
+            guard let activity = activity else { return }
+            self.updateForMotionActivity(activity)
         })
+        
+        
     }
     
-    func restartAccelerometerPolling() {
-        motion.stopAccelerometerUpdates()
-        motion = CMMotionManager()
-        startAccelerometerPolling()
-    }
-    
-    func performAccelerometerCalculations(data: CMAccelerometerData) {
-        let accel = data.acceleration
-        if previousAccel == nil { previousAccel = accel }
-        guard let previousAccel = previousAccel else { return }
+    func updateForMotionActivity(activity: CMMotionActivity) {
         
-        //calulations made according to the following publication:
-        //ADVANCED PEDOMETER FOR SMARTPHONE-BASED ACTIVITY TRACKING
-        //http://www2.fiit.stuba.sk/~bielik/publ/abstracts/2012/tomlein-et-al-healthinf2012.pdf
+        var activityState: ActivityState = .Walking
         
-        let X = accel.x * previousAccel.x
-        let Y = accel.y * previousAccel.y
-        let Z = accel.z * previousAccel.z
-        let rootCurrent = sqrt(pow(accel.x, 2) + pow(accel.y, 2) + pow(accel.z, 2))
-        let rootPrevious = sqrt(pow(previousAccel.x, 2) + pow(previousAccel.y, 2) + pow(previousAccel.z, 2))
+        if activity.running { activityState = .Running }
+        else { activityState = .Walking }
         
-        let unweightedConstant = (X + Y + Z) / (rootCurrent * rootPrevious)
-        
-        var weightedTotal: Double = 10 * unweightedConstant
-        for i in 1...9 {
-            let weight = Double(10 - i)
-            let constant = motionConstantStack[i]
-            weightedTotal += constant * weight
-        }
-        
-        let weightedConstant = abs(weightedTotal / 55.0)
-        
-        if weightedConstant < 0.1 {
-            restartAccelerometerPolling()
-        }
-        
-        print(weightedConstant)
-        
-        addConstantToMotionStack(weightedConstant)
-        updateWalkRunState()
-    }
-    
-    func addConstantToMotionStack(constant: Double) {
-        for i in 0...8 {
-            motionConstantStack[i] = motionConstantStack [i + 1]
-        }
-        motionConstantStack[9] = constant
-        
-        previous100Frames.append(constant)
-        if previous100Frames.count >= 100 {
-            previous100Frames.removeAtIndex(0)
+        if RMCurrentActivityState != activityState {
+            sync{ self.transitionToActivityState(activityState) }
         }
     }
     
-    func updateWalkRunState() {
-        var sum = 0.0
-        var peak = -100.0
-        var trough = 100.0
+    func transitionToActivityState(activityState: ActivityState) {
+        RMCurrentActivityState = activityState
+        print(activityState)
+        let playlist = activityState.playlist
+        self.songsInPlaylist = playlist.songs.shuffled()
+        self.backgroundView.backgroundColor = activityState.color
+        self.activityImage.image = activityState.image
         
-        for frame in previous100Frames {
-            sum += frame
-            if frame > peak { peak = frame }
-            if frame < trough { trough = frame }
+        if let song = songsInPlaylist.first {
+            
+            if let nowPlaying = RMPlayer.nowPlayingItem {
+                if !songsInPlaylist.contains(RMPlayer.nowPlayingItem!) {
+                    SongCell.decorateForSong(song, inNameLabel: itemNameLabel, artistLabel: itemArtistLabel, albumArt: itemAlbumArt)
+                    RMPlayer.nowPlayingItem = song
+                }
+                else {
+                    SongCell.decorateForSong(nowPlaying, inNameLabel: itemNameLabel, artistLabel: itemArtistLabel, albumArt: itemAlbumArt)
+                }
+            }
+            else {
+                SongCell.decorateForSong(song, inNameLabel: itemNameLabel, artistLabel: itemArtistLabel, albumArt: itemAlbumArt)
+            }
+            
+            RMPlayer.play()
         }
-        
-        let average = sum / Double(previous100Frames.count)
-        let highest = peak
-        let lowest = trough
-        
-        //state updates accoring to Accelerometer Experiment.numbers in repository root
-        
-        if highest > 0.95 && lowest > 0.95 {
-            RMCurrentActivityState = .Standing
-        }
-        
-        else if highest > 0.8 && lowest < 0.8 {
-            RMCurrentActivityState = .Walking
-        }
-        
-        else if average < 0.7 && highest < 0.9 {
-            RMCurrentActivityState = .Running
-        }
-        
-        sync { self.stateLabel.text = "\(RMCurrentActivityState)" }
         
     }
+    
     
 }
