@@ -20,6 +20,7 @@ class MusicViewController : UIViewController {
     var playhead: UIView?
     
     @IBOutlet weak var currentItemView: UIView!
+    @IBOutlet weak var currentItemScaleView: UIView!
     var itemRestingPosition: CGPoint!
     @IBOutlet weak var itemAlbumArt: UIImageView!
     @IBOutlet weak var itemNameLabel: UILabel!
@@ -243,8 +244,12 @@ class MusicViewController : UIViewController {
     
     func animatePlaylistButton(button: UIButton?, atDistancePercentage percent: CGFloat) {
         
-        let buttonScale = 2.5 - (pow(percent, 5) * 1.5)
-        let itemScale = pow(2, 0.5 * percent) - 0.5
+        let buttonScale = max(1.0, 2.5 - (pow(percent, 5) * 1.5))
+        
+        let itemDistance = itemRestingPosition.distanceTo(currentItemView.frame.origin)
+        let maxDistance = self.view.frame.width
+        let itemPercentage = 1 - (itemDistance / maxDistance)
+        let itemScale = pow(2, 0.75 * itemPercentage) - 0.75
         
         UIView.animateWithDuration(0.4, delay: 0.0, usingSpringWithDamping: 1.0, initialSpringVelocity: 0.0, options: [], animations: {
             
@@ -256,6 +261,7 @@ class MusicViewController : UIViewController {
             }
             
             self.currentItemView.alpha = itemScale
+            self.currentItemScaleView.transform = CGAffineTransformMakeScale(itemScale, itemScale)
             
         }, completion: nil)
     }
