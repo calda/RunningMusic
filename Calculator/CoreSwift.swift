@@ -29,6 +29,7 @@ extension Array {
     ///Returns a copy of the array in random order
     func shuffled() -> [Element] {
         var list = self
+        if self.count == 0 { return self }
         for i in 0..<(list.count - 1) {
             
             var j = i

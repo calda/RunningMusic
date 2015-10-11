@@ -13,7 +13,7 @@ enum Playlist : StringLiteralType {
     case Running, Walking, Both, Neither
     
     var dataKey: String {
-        return "playlist-\(self)".lowercaseString
+        return "playlist-\(self)".uppercaseString
     }
     
     var songs: [MPMediaItem] {
