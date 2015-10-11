@@ -23,12 +23,15 @@
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="BAv-Wf-7bK" userLabel="Current Item View">
                                 <rect key="frame" x="56" y="179" width="208" height="210"/>
                                 <subviews>
-                                    <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="gKo-Oq-f1N">
+                                    <imageView contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="gKo-Oq-f1N">
                                         <rect key="frame" x="20" y="0.0" width="168" height="168"/>
                                         <animations/>
                                         <constraints>
                                             <constraint firstAttribute="width" secondItem="gKo-Oq-f1N" secondAttribute="height" multiplier="1:1" id="fxR-Ea-uC3"/>
                                         </constraints>
+                                        <connections>
+                                            <outletCollection property="gestureRecognizers" destination="tyC-KA-AeU" appends="YES" id="f4V-Vk-FdJ"/>
+                                        </connections>
                                     </imageView>
                                     <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Cardiac Arrest" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumScaleFactor="0.69999999999999996" translatesAutoresizingMaskIntoConstraints="NO" id="gtl-1P-5c5">
                                         <rect key="frame" x="0.0" y="171" width="208" height="26"/>
@@ -151,6 +154,7 @@
                         </subviews>
                         <animations/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <gestureRecognizers/>
                         <constraints>
                             <constraint firstItem="tUF-Qb-buU" firstAttribute="centerX" secondItem="BAv-Wf-7bK" secondAttribute="centerX" id="2Y9-bP-xoJ"/>
                             <constraint firstAttribute="trailingMargin" secondItem="ibM-HL-n2j" secondAttribute="trailing" id="5ka-J4-Jtt"/>
@@ -164,6 +168,9 @@
                             <constraint firstItem="SJP-Zd-yZk" firstAttribute="centerX" secondItem="gKo-Oq-f1N" secondAttribute="centerX" id="pMg-pK-hCd"/>
                             <constraint firstItem="BAv-Wf-7bK" firstAttribute="top" secondItem="SJP-Zd-yZk" secondAttribute="bottom" constant="30" id="vyu-bV-0iR"/>
                         </constraints>
+                        <connections>
+                            <outletCollection property="gestureRecognizers" destination="qiD-80-atE" appends="YES" id="w1D-86-cNr"/>
+                        </connections>
                     </view>
                     <simulatedScreenMetrics key="simulatedDestinationMetrics" type="retina4"/>
                     <connections>
@@ -171,9 +178,24 @@
                         <outlet property="itemAlbumArt" destination="gKo-Oq-f1N" id="e8Z-1H-f6D"/>
                         <outlet property="itemArtistLabel" destination="dwj-Jl-uA3" id="ypr-04-6w3"/>
                         <outlet property="itemNameLabel" destination="gtl-1P-5c5" id="POf-po-xVN"/>
+                        <outlet property="playButton" destination="4EO-IB-5Or" id="WWI-ct-Fuv"/>
+                        <outletCollection property="playlistButtons" destination="tUF-Qb-buU" collectionClass="NSMutableArray" id="Ka2-8c-ZHi"/>
+                        <outletCollection property="playlistButtons" destination="ibM-HL-n2j" collectionClass="NSMutableArray" id="EjB-Yv-Q87"/>
+                        <outletCollection property="playlistButtons" destination="SJP-Zd-yZk" collectionClass="NSMutableArray" id="ZiQ-yw-qZW"/>
+                        <outletCollection property="playlistButtons" destination="4UC-2a-OdC" collectionClass="NSMutableArray" id="wTy-YR-Om8"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="g73-Kf-0cn" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <tapGestureRecognizer id="tyC-KA-AeU">
+                    <connections>
+                        <action selector="togglePlayback:" destination="aU2-yx-1wD" id="99Y-z0-fpF"/>
+                    </connections>
+                </tapGestureRecognizer>
+                <panGestureRecognizer minimumNumberOfTouches="1" id="qiD-80-atE">
+                    <connections>
+                        <action selector="screenPanned:" destination="aU2-yx-1wD" id="SeU-Tl-4Vj"/>
+                    </connections>
+                </panGestureRecognizer>
             </objects>
             <point key="canvasLocation" x="276" y="323"/>
         </scene>

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import UIKit
 
 ///short-form function to run a block synchronously on the main queue
 func sync(closure: () -> ()) {
@@ -39,4 +40,12 @@ extension Array {
         }
         return list
     }
+}
+
+extension CGPoint {
+    
+    func distanceTo(other: CGPoint) -> CGFloat {
+        return CGFloat(sqrt(pow(self.x - other.x, 2) + pow(self.y - other.y, 2)))
+    }
+    
 }
